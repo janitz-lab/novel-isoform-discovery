@@ -1,0 +1,171 @@
+#################################################
+#Preparing FLAIR files for GffCompare comparison
+#################################################
+ 
+#Copy and split TPM file over the three regions
+#Col 2-9 = BCH_rep_1 to  BCH_rep_8
+#Col 10-14 = BA9_rep_1 to BA9_rep_5
+#Col 15-20 = BP_rep_1 to BP_rep_6
+ 
+awk -F'\t' '{print $1 "\t" $2 "\t" $3 "\t" $4 "\t" $5 "\t" $6 "\t" $7 "\t" $8 "\t" $9  }' flair_quantify_tpm.tsv > tpm_split_for_BCH.txt
+ 
+awk -F'\t' '{print $1 "\t" $10 "\t" $11 "\t" $12 "\t" $13 "\t" $14}' flair_quantify_tpm.tsv > tpm_split_for_BA9.txt
+ 
+awk -F'\t' '{print $1 "\t" $15 "\t" $16 "\t" $17 "\t" $18 "\t" $19 "\t" $20}' flair_quantify_tpm.tsv > tpm_split_for_BP.txt
+ 
+#Remove all transcripts with no expression in a region, for that region TPM file. This also makes a list of the removed transcripts.
+ 
+awk 'BEGIN {OFS="\t"} NR==1 {print $0 > "BCH_filtered_tpm_0.txt"; print $0 > "BCH_removed_0_lines.txt"; next} {sum = $2 + $3 + $4 + $5 + $6 + $7 + $8 + $9 ; if (sum == 0) {print $0 >> "BCH_removed_0_lines.txt"} else {print $0 >> "BCH_filtered_tpm_0.txt"}}' tpm_split_for_BCH.txt
+ 
+awk 'BEGIN {OFS="\t"} NR==1 {print $0 > "BA9_filtered_tpm_0.txt"; print $0 > "BA9_removed_0_lines.txt"; next} {sum = $2 + $3 + $4 + $5 + $6 ; if (sum == 0) {print $0 >> "BA9_removed_0_lines.txt"} else {print $0 >> "BA9_filtered_tpm_0.txt"}}' tpm_split_for_BA9.txt
+ 
+ 
+awk 'BEGIN {OFS="\t"} NR==1 {print $0 > "BP_filtered_tpm_0.txt"; print $0 > "BP_removed_0_lines.txt"; next} {sum = $2 + $3 + $4 + $5 + $6 + $7 ; if (sum == 0) {print $0 >> "BP_removed_0_lines.txt"} else {print $0 >> "BP_filtered_tpm_0.txt"}}' tpm_split_for_BP.txt
+ 
+#Make lists of transcript gene ID's found in each region 
+ 
+awk -F'\t' 'NR>1 {print $1}' BA9_filtered_tpm_0.txt > BA9_flair_transcript_gene_id_list.txt
+ 
+awk -F'\t' 'NR>1 {print $1}' BCH_filtered_tpm_0.txt > BCH_flair_transcript_gene_id_list.txt
+ 
+awk -F'\t' 'NR>1 {print $1}' BP_filtered_tpm_0.txt > BP_flair_transcript_gene_id_list.txt
+ 
+#Separate transcript and gene ids:
+ 
+awk -F'_' '{print $1}' BCH_flair_transcript_gene_id_list.txt > BCH_flair_transcript_id_list.txt
+ 
+awk -F'_' '{print $2}' BCH_flair_transcript_gene_id_list.txt > BCH_flair_gene_id_list.txt
+ 
+awk -F'_' '{print $1}' BA9_flair_transcript_gene_id_list.txt > BA9_flair_transcript_id_list.txt
+ 
+awk -F'_' '{print $2}' BA9_flair_transcript_gene_id_list.txt > BA9_flair_gene_id_list.txt
+ 
+awk -F'_' '{print $1}' BP_flair_transcript_gene_id_list.txt > BP_flair_transcript_id_list.txt
+ 
+awk -F'_' '{print $2}' BP_flair_transcript_gene_id_list.txt > BP_flair_gene_id_list.txt
+ 
+#Concatenate FLAIR gtf file's
+ 
+cat flair_chr1.isoforms.gtf flair_chr2.isoforms.gtf flair_chr3.isoforms.gtf flair_chr4.isoforms.gtf flair_chr5.isoforms.gtf flair_chr6.isoforms.gtf flair_chr7.isoforms.gtf flair_chr8.isoforms.gtf flair_chr9.isoforms.gtf flair_chr10.isoforms.gtf flair_chr11.isoforms.gtf flair_chr12.isoforms.gtf flair_chr13.isoforms.gtf flair_chr14.isoforms.gtf flair_chr15.isoforms.gtf flair_chr16.isoforms.gtf flair_chr17.isoforms.gtf flair_chr18.isoforms.gtf flair_chr19.isoforms.gtf flair_chr20.isoforms.gtf flair_chr21.isoforms.gtf flair_chr22.isoforms.gtf flair_chrM.isoforms.gtf flair_chrX.isoforms.gtf flair_chrY.isoforms.gtf > flair_isoforms.gtf
+ 
+#Make a gtf file containing isoforms present within each brain region as well as another file with all mismatches:
+ 
+awk 'BEGIN { FS = "\t"; OFS = "\t" } NR == FNR { ids[$1]; next } { match($9, /transcript_id "([^"]+)"/, m); if (m[1] in ids) { print $0 > "BA9_flair_matching_subset.gtf"; } else { print $0 > "BA9_exluded_subset.gtf"; } }' BA9_flair_transcript_id_list.txt flair_isoforms.gtf
+ 
+awk 'BEGIN { FS = "\t"; OFS = "\t" } NR == FNR { ids[$1]; next } { match($9, /transcript_id "([^"]+)"/, m); if (m[1] in ids) { print $0 > "BCH_flair_matching_subset.gtf"; } else { print $0 > "BCH_flair_exluded_subset.gtf"; } }' BCH_flair_transcript_id_list.txt flair_isoforms.gtf
+ 
+awk 'BEGIN { FS = "\t"; OFS = "\t" } NR == FNR { ids[$1]; next } { match($9, /transcript_id "([^"]+)"/, m); if (m[1] in ids) { print $0 > "BP_flair_matching_subset.gtf"; } else { print $0 > "BP_flair_exluded_subset.gtf"; } }' BP_flair_transcript_id_list.txt flair_isoforms.gtf
+ 
+#################################################
+#Preparing Bambu files for GffCompare comparison
+#################################################
+ 
+#Use awk to create new CPM files for each region
+#Input file: CPM_transcript.txt (from Bambu output)
+ 
+awk -F'\t' '{print $1 "\t" $2 "\t" $3 "\t" $4 "\t" $5 "\t" $6 "\t" $7}' CPM_transcript.txt > CPM_split_for_BA9.txt
+ 
+awk -F'\t' '{print $1 "\t" $2 "\t" $8 "\t" $9 "\t" $10 "\t" $11 "\t" $12 "\t" $13 "\t" $14 "\t" $15}' CPM_transcript.txt > CPM_split_for_BCH.txt
+ 
+awk -F'\t' '{print $1 "\t" $2 "\t" $16 "\t" $17 "\t" $18 "\t" $19 "\t" $20 "\t" $21}' CPM_transcript.txt > CPM_split_for_BP.txt
+ 
+#Remove all transcripts with no expression in a region, for that region CPM file. This also makes a list of the removed transcripts.
+ 
+awk 'BEGIN {OFS="\t"} NR==1 {print $0 > "BA9_filtered_CPM_0.txt"; print $0 > "BA9_removed_0_lines.txt"; next} {sum = $3 + $4 + $5 + $6 + $7; if (sum == 0) {print $0 >> "BA9_removed_0_lines.txt"} else {print $0 >> "BA9_filtered_CPM_0.txt"}}' CPM_split_for_BA9.txt
+ 
+awk 'BEGIN {OFS="\t"} NR==1 {print $0 > "BCH_filtered_CPM_0.txt"; print $0 > "BCH_removed_0_lines.txt"; next} {sum = $3 + $4 + $5 + $6 + $7 + $8 + $9 + $10; if (sum == 0) {print $0 >> "BCH_removed_0_lines.txt"} else {print $0 >> "BCH_filtered_CPM_0.txt"}}' CPM_split_for_BCH.txt
+ 
+awk 'BEGIN {OFS="\t"} NR==1 {print $0 > "BP_filtered_CPM_0.txt"; print $0 > "BP_removed_0_lines.txt"; next} {sum = $3 + $4 + $5 + $6 + $7 + $8; if (sum == 0) {print $0 >> "BP_removed_0_lines.txt"} else {print $0 >> "BP_filtered_CPM_0.txt"}}' CPM_split_for_BP.txt
+ 
+#Make lists of transcript ID's found in each region 
+ 
+awk -F'\t' 'NR>1 {print $1}' BA9_filtered_CPM_0.txt > BA9_bambu_transcript_id_list.txt
+ 
+awk -F'\t' 'NR>1 {print $1}' BCH_filtered_CPM_0.txt > BCH_bambu_transcript_id_list.txt
+ 
+awk -F'\t' 'NR>1 {print $1}' BP_filtered_CPM_0.txt > BP_bambu_transcript_id_list.txt
+ 
+#Make a gtf file with matching transcript id's and another file with all mismatches:
+ 
+#Input files: 
+#extended_annotations.gtf (from Bambu output)
+#BA9_bambu_transcript_id_list_copy.txt  
+#BCH_bambu_transcript_id_list_copy.txt  
+#BP_bambu_transcript_id_list_copy.txt   
+ 
+awk 'BEGIN { FS = "\t"; OFS = "\t" } NR == FNR { ids[$1]; next } { match($9, /transcript_id "([^"]+)"/, m); if (m[1] in ids) { print $0 > "BA9_bambu_matching_subset.gtf"; } else { print $0 > "BA9_bambu_exluded_subset.gtf"; } }' BA9_bambu_transcript_id_list_copy.txt extended_annotations.gtf
+ 
+awk 'BEGIN { FS = "\t"; OFS = "\t" } NR == FNR { ids[$1]; next } { match($9, /transcript_id "([^"]+)"/, m); if (m[1] in ids) { print $0 > "BCH_bambu_matching_subset.gtf"; } else { print $0 > "BCH_bambu_exluded_subset.gtf"; } }' BCH_bambu_transcript_id_list_copy.txt extended_annotations.gtf
+ 
+awk 'BEGIN { FS = "\t"; OFS = "\t" } NR == FNR { ids[$1]; next } { match($9, /transcript_id "([^"]+)"/, m); if (m[1] in ids) { print $0 > "BP_bambu_matching_subset.gtf"; } else { print $0 > "BP_bambu_exluded_subset.gtf"; } }' BP_bambu_transcript_id_list_copy.txt extended_annotations.gtf
+ 
+####################################################
+#Preparing IsoQuant files for GffCompare comparison#
+####################################################
+ 
+#Input files:
+#OUT.transcript_models.gtf 
+#OUT.transcript_model_grouped_tpm.tsv
+ 
+#Use awk to create new TPM files for each region
+ 
+awk -F'\t' '{print $1 "\t" $2 "\t" $3 "\t" $4 "\t" $5 "\t" $6}' OUT.transcript_model_grouped_tpm.tsv > TPM_split_for_BA9.txt
+ 
+awk -F'\t' '{print $1 "\t" $7 "\t" $8 "\t" $9 "\t" $10 "\t" $11 "\t" $12 "\t" $13 "\t" $14}' OUT.transcript_model_grouped_tpm.tsv > TPM_split_for_BCH.txt
+ 
+awk -F'\t' '{print $1 "\t" $15 "\t" $16 "\t" $17 "\t" $18 "\t" $19 "\t" $20}' OUT.transcript_model_grouped_tpm.tsv > TPM_split_for_BP.txt
+ 
+#Remove all transcripts with no expression in a region, for that region TPM file. This also makes a list of the removed transcripts.
+ 
+awk 'BEGIN {OFS="\t"} NR==1 {print $0 > "BA9_filtered_TPM_0.txt"; print $0 > "BA9_removed_0_lines.txt"; next} {sum = $2 + $3 + $4 + $5 + $6 ; if (sum == 0) {print $0 >> "BA9_removed_0_lines.txt"} else {print $0 >> "BA9_filtered_TPM_0.txt"}}' TPM_split_for_BA9.txt
+ 
+awk 'BEGIN {OFS="\t"} NR==1 {print $0 > "BCH_filtered_TPM_0.txt"; print $0 > "BCH_removed_0_lines.txt"; next} {sum = $2 + $3 + $4 + $5 + $6 + $7 + $8 + $9 ; if (sum == 0) {print $0 >> "BCH_removed_0_lines.txt"} else {print $0 >> "BCH_filtered_TPM_0.txt"}}' TPM_split_for_BCH.txt
+ 
+awk 'BEGIN {OFS="\t"} NR==1 {print $0 > "BP_filtered_TPM_0.txt"; print $0 > "BP_removed_0_lines.txt"; next} {sum = $2 + $3 + $4 + $5 + $6 + $7 ; if (sum == 0) {print $0 >> "BP_removed_0_lines.txt"} else {print $0 >> "BP_filtered_TPM_0.txt"}}' TPM_split_for_BP.txt
+ 
+#Make lists of transcript ID's found in each region 
+ 
+awk -F'\t' 'NR>1 {print $1}' BA9_filtered_TPM_0.txt > BA9_isoquant_transcript_id_list.txt
+ 
+awk -F'\t' 'NR>1 {print $1}' BCH_filtered_TPM_0.txt > BCH_isoquant_transcript_id_list.txt
+ 
+awk -F'\t' 'NR>1 {print $1}' BP_filtered_TPM_0.txt > BP_isoquant_transcript_id_list.txt
+ 
+#Make a gtf file with matching transcript id's and another file with all mismatches:
+ 
+#Remove headers from isoquant gtf files:
+ 
+tail -n +4 OUT.transcript_models.gtf > Isoquant_split_BA9.gtf
+tail -n +4 OUT.transcript_models.gtf > Isoquant_split_BCH.gtf
+tail -n +4 OUT.transcript_models.gtf > Isoquant_split_BP.gtf
+ 
+awk 'BEGIN { FS = "\t"; OFS = "\t" } NR == FNR { ids[$1]; next } { match($9, /transcript_id "([^"]+)"/, m); if (m[1] in ids) { print $0 > "BA9_isoquant_matching_subset.gtf"; } else { print $0 > "BA9_isoquant_exluded_subset.gtf"; } }' BA9_isoquant_transcript_id_list.txt Isoquant_split_BA9.gtf
+ 
+awk 'BEGIN { FS = "\t"; OFS = "\t" } NR == FNR { ids[$1]; next } { match($9, /transcript_id "([^"]+)"/, m); if (m[1] in ids) { print $0 > "BCH_isoquant_matching_subset.gtf"; } else { print $0 > "BCH_isoquant_exluded_subset.gtf"; } }' BCH_isoquant_transcript_id_list.txt Isoquant_split_BCH.gtf
+ 
+awk 'BEGIN { FS = "\t"; OFS = "\t" } NR == FNR { ids[$1]; next } { match($9, /transcript_id "([^"]+)"/, m); if (m[1] in ids) { print $0 > "BP_isoquant_matching_subset.gtf"; } else { print $0 > "BP_isoquant_exluded_subset.gtf"; } }' BP_isoquant_transcript_id_list.t
+xt Isoquant_split_BP.gtf
+ 
+###########
+#Gffcompare
+###########
+ 
+gffcompare BA9_bambu_matching_subset.gtf  BA9_flair_matching_subset.gtf  BA9_isoquant_matching_subset.gtf
+ 
+gffcompare BP_bambu_matching_subset.gtf  BP_flair_matching_subset.gtf  BP_isoquant_matching_subset.gtf
+ 
+gffcompare BCH_bambu_matching_subset.gtf  BCH_flair_matching_subset.gtf  BCH_isoquant_matching_subset.gtf
+ 
+#List of transcripts supported by three assembly methods:
+ 
+awk -F'\t' '!(($5 == "-" || $6 == "-" || $7 == "-"))' gffcmp.tracking > filtered_gffcmp.tracking
+ 
+awk -F'\t' '!(($5 == "-" || $6 == "-" || $7 == "-"))' gffcmp.tracking > filtered_gffcmp.tracking
+ 
+awk -F'\t' '!(($5 == "-" || $6 == "-" || $7 == "-"))' gffcmp.tracking > filtered_gffcmp.tracking
+ 
+#List of bambu transcripts IDS:
+ 
+grep -Eo "|BambuTx[0-9]+" novel_BA9_supported_by_three.txt > ids_novel_supported_by_three_BA9.txt
+grep -Eo "|BambuTx[0-9]+" novel_BP_supported_by_three.txt > ids_novel_supported_by_three_BP.txt
+grep -Eo "|BambuTx[0-9]+" novel_BCH_supported_by_three.txt > ids_novel_supported_by_three_BCH.txt
