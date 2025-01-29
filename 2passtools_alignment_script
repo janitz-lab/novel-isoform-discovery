@@ -1,0 +1,57 @@
+#!/bin/bash
+#PBS -J 0-18
+ 
+PARAMS=(
+        BA9_rep_1
+        BA9_rep_2
+        BA9_rep_3
+        BA9_rep_4
+        BA9_rep_5
+        BCH_rep_1
+        BCH_rep_2
+        BCH_rep_3
+        BCH_rep_4
+        BCH_rep_5
+        BCH_rep_6
+        BCH_rep_7
+        BCH_rep_8
+        BP_rep_1
+        BP_rep_2
+        BP_rep_3
+        BP_rep_4
+        BP_rep_5
+        BP_rep_6
+)
+ 
+cd /srv/scratch/2passtools/
+mkdir -p ${PARAMS[$PBS_ARRAY_INDEX]}/first-pass_alignment
+mkdir ${PARAMS[$PBS_ARRAY_INDEX]}/second-pass_alignment
+cd ${PARAMS[$PBS_ARRAY_INDEX]}/
+ 
+#First-pass alignment: Align reads to reference genome using minimap2.
+./minimap2-2.24 -a --cs=long -k14 -x splice ./gencode_v45/GRCh38.primary_assembly.genome.fa ./${PARAMS[$PBS_ARRAY_INDEX]}.fastq.gz -o ./first-pass_alignment/${PARAMS[$PBS_ARRAY_INDEX]}.sam
+ 
+#Convert the sam alignment files to bam format and index the bam files.
+module load samtools/1.15.1
+ 
+samtools view -Sb ./first-pass_alignment/${PARAMS[$PBS_ARRAY_INDEX]}.sam | samtools sort -o ./first-pass_alignment/${PARAMS[$PBS_ARRAY_INDEX]}.bam
+ 
+samtools index ./first-pass_alignment/${PARAMS[$PBS_ARRAY_INDEX]}.bam
+ 
+#Use score module to extract junction metrics and sequence information, and use them to score splice junctions found in the alignments
+
+source activate 2passtools
+ 
+2passtools score ./first-pass_alignment/${PARAMS[$PBS_ARRAY_INDEX]}.bam -f ./gencode_v45/GRCh38.primary_assembly.genome.fa -o ./first-pass_alignment/${PARAMS[$PBS_ARRAY_INDEX]}.bed
+ 
+#Filter the low-scoring splice junctions with filter module. 
+2passtools filter ./first-pass_alignment/${PARAMS[$PBS_ARRAY_INDEX]}.bed -o ./first-pass_alignment/${PARAMS[$PBS_ARRAY_INDEX]}.6-column.bed
+
+#Second-pass alignment: Align reads using minimap2 with filtered junctions from 2passtools.
+./minimap2-2.24 -a --cs=long -k14 -x splice ./gencode_v45/GRCh38.primary_assembly.genome.fa ./GTEx_v9/fastq/${PARAMS[$PBS_ARRAY_INDEX]}.fastq.gz --junc-bed ./first-pass_alignment/${PARAMS[$PBS_ARRAY_INDEX]}.6-column.bed -o ./second-pass_alignment/${PARAMS[$PBS_ARRAY_INDEX]}.sam
+
+#Convert the sam alignment files to bam format and index the bam files.
+ 
+samtools view -Sb ./second-pass_alignment/${PARAMS[$PBS_ARRAY_INDEX]}.sam | samtools sort -o ./second-pass_alignment/${PARAMS[$PBS_ARRAY_INDEX]}.bam
+ 
+samtools index ./second-pass_alignment/${PARAMS[$PBS_ARRAY_INDEX]}.bam
