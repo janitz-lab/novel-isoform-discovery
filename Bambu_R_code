@@ -29,7 +29,8 @@ se.novel = se[mcols(se)$novelTranscript,]
 writeBambuOutput(se.novel, path = "../bambu_novel_BA9_BCH_BP_output")
  
 #plotting transcripts in respect to loci 
-plotBambu(se, type = "annotation", gene_id = "ENSG00000137767.14")
+plotBambu(se, type = "annotation", gene_id = "ENSG00000285412.2")
+plotBambu(se, type = "annotation", gene_id = "ENSG00000196923.14")
  
 #PCA and heatmap figures
 plotBambu(se, type = "heatmap")
