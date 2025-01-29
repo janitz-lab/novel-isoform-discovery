@@ -1,0 +1,31 @@
+#################
+#IsoQuant Script#
+#################
+ 
+#!/bin/bash
+ 
+cd /srv/scratch/IsoQuant/
+ 
+python isoquant.py --data_type nanopore --threads 8 --bam_list ../isoquant_files/isoquant_bam_file_list.txt --reference ../gencode_v45/GRCh38.primary_assembly.genome.fa --genedb ../gencode_v45/gencode.v45.annotation.gtf --output ../isoquant_output
+ 
+#isoquant_bam_file_list.txt:
+/srv/scratch/second-pass_alignment/BCH_rep_1.bam:BCH_rep_1
+/srv/scratch/second-pass_alignment/BCH_rep_2.bam:BCH_rep_2
+/srv/scratch/second-pass_alignment/BCH_rep_3.bam:BCH_rep_3
+/srv/scratch/second-pass_alignment/BCH_rep_4.bam:BCH_rep_4
+/srv/scratch/second-pass_alignment/BCH_rep_5.bam:BCH_rep_5
+/srv/scratch/second-pass_alignment/BCH_rep_6.bam:BCH_rep_6
+/srv/scratch/second-pass_alignment/BCH_rep_7.bam:BCH_rep_7
+/srv/scratch/second-pass_alignment/BCH_rep_8.bam:BCH_rep_8
+/srv/scratch/second-pass_alignment/BA9_rep_1.bam:BA9_rep_1
+/srv/scratch/second-pass_alignment/BA9_rep_2.bam:BA9_rep_2
+/srv/scratch/second-pass_alignment/BA9_rep_3.bam:BA9_rep_3
+/srv/scratch/second-pass_alignment/BA9_rep_4.bam:BA9_rep_4
+/srv/scratch/second-pass_alignment/BA9_rep_5.bam:BA9_rep_5
+/srv/scratch/second-pass_alignment/BP_rep_1.bam:BP_rep_1
+/srv/scratch/second-pass_alignment/BP_rep_2.bam:BP_rep_2
+/srv/scratch/second-pass_alignment/BP_rep_3.bam:BP_rep_3
+/srv/scratch/second-pass_alignment/BP_rep_4.bam:BP_rep_4
+/srv/scratch/second-pass_alignment/BP_rep_5.bam:BP_rep_5
+/srv/scratch/second-pass_alignment/BP_rep_6.bam:BP_rep_6
+
