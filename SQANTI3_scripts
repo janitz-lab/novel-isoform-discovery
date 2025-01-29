@@ -1,0 +1,139 @@
+######################
+#SQANTI3 qc on Bambu##
+######################
+ 
+#!/bin/bash
+#PBS -J 0-2
+ 
+PARAMS=(
+BA9
+BCH
+BP
+)
+ 
+cd /srv/scratch/SQANTI3-5.2.1/
+ 
+source activate SQANTI3.env
+ 
+python sqanti3_qc.py ../splitting_bambu_by_region/gtf_splitting/${PARAMS[$PBS_ARRAY_INDEX]}_bambu_matching_subset.gtf ../gencode_v45/gencode.v45.annotation.gtf ../gencode_v45/GRCh38.primary_assembly.genome.fa --force_id_ignore -o ${PARAMS[$PBS_ARRAY_INDEX]}_bambu_SQANTI3_qc -d ../${PARAMS[$PBS_ARRAY_INDEX]}_bambu_SQANTI3_qc --report both --isoAnnotLite
+ 
+#######################
+#SQANTI qc on IsoQuant##
+#######################
+ 
+#!/bin/bash
+#PBS -J 0-2
+ 
+PARAMS=(
+BA9
+BCH
+BP
+)
+ 
+cd /srv/scratch/SQANTI3-5.2.1/
+ 
+source activate SQANTI3.env
+ 
+python sqanti3_qc.py ../isoquant_files/splitting_isoquant_by_region/${PARAMS[$PBS_ARRAY_INDEX]}_isoquant_matching_subset.gtf ../gencode_v45/gencode.v45.annotation.gtf ../gencode_v45/GRCh38.primary_assembly.genome.fa --force_id_ignore -o ${PARAMS[$PBS_ARRAY_INDEX]}_isoquant_SQANTI3_qc -d ../${PARAMS[$PBS_ARRAY_INDEX]}_isoquant_SQANTI3_qc --report both --isoAnnotLite
+ 
+####################
+#SQANTI qc on FLAIR##
+####################
+ 
+#!/bin/bash
+#PBS -J 0-2
+ 
+PARAMS=(
+BA9
+BCH
+BP
+)
+ 
+cd /srv/scratch/SQANTI3-5.2.1/
+ 
+source activate SQANTI3.env
+ 
+python sqanti3_qc.py ../splitting_flair_again/${PARAMS[$PBS_ARRAY_INDEX]}_flair_matching_subset.gtf ../gencode_v45/gencode.v45.annotation.gtf ../gencode_v45/GRCh38.primary_assembly.genome.fa --force_id_ignore -o ${PARAMS[$PBS_ARRAY_INDEX]}_flair_SQANTI3_qc -d ../${PARAMS[$PBS_ARRAY_INDEX]}_flair_SQANTI3_qc --report both --isoAnnotLite
+ 
+#############################
+#SQANTI rules filter on Bambu##
+#############################
+ 
+#!/bin/bash
+#PBS -J 0-2
+ 
+PARAMS=(
+BA9
+BCH
+BP
+)
+ 
+cd /srv/scratch/SQANTI3-5.2.1/
+ 
+source activate SQANTI3.env
+ 
+python sqanti3_filter.py rules ../${PARAMS[$PBS_ARRAY_INDEX]}_bambu_SQANTI3_qc/${PARAMS[$PBS_ARRAY_INDEX]}_bambu_SQANTI3_qc_classification.txt --gtf ../${PARAMS[$PBS_ARRAY_INDEX]}_bambu_SQANTI3_qc/${PARAMS[$PBS_ARRAY_INDEX]}_bambu_SQANTI3_qc_corrected.gtf --faa ../${PARAMS[$PBS_ARRAY_INDEX]}_bambu_SQANTI3_qc/${PARAMS[$PBS_ARRAY_INDEX]}_bambu_SQANTI3_qc_corrected.faa --isoAnnotGFF3 ../${PARAMS[$PBS_ARRAY_INDEX]}_bambu_SQANTI3_qc/${PARAMS[$PBS_ARRAY_INDEX]}_bambu_SQANTI3_qc.gff3 --output ${PARAMS[$PBS_ARRAY_INDEX]}_bambu_rules_filtered --json_filter ../my_filter.json --dir ../${PARAMS[$PBS_ARRAY_INDEX]}_bambu_rules_filtered
+ 
+##############################
+#SQANTI rules filter on IsoQuant##
+##############################
+ 
+#!/bin/bash
+#PBS -J 0-2
+ 
+PARAMS=(
+BA9
+BCH
+BP
+)
+ 
+cd /srv/scratch/SQANTI3-5.2.1/
+ 
+source activate SQANTI3.env
+ 
+python sqanti3_filter.py rules ../${PARAMS[$PBS_ARRAY_INDEX]}_isoquant_SQANTI3_qc/${PARAMS[$PBS_ARRAY_INDEX]}_isoquant_SQANTI3_qc_classification.txt --gtf ../${PARAMS[$PBS_ARRAY_INDEX]}_isoquant_SQANTI3_qc/${PARAMS[$PBS_ARRAY_INDEX]}_isoquant_SQANTI3_qc_corrected.gtf --faa ../${PARAMS[$PBS_ARRAY_INDEX]}_isoquant_SQANTI3_qc/${PARAMS[$PBS_ARRAY_INDEX]}_isoquant_SQANTI3_qc_corrected.faa --isoAnnotGFF3 ../${PARAMS[$PBS_ARRAY_INDEX]}_isoquant_SQANTI3_qc/${PARAMS[$PBS_ARRAY_INDEX]}_isoquant_SQANTI3_qc.gff3 --output ${PARAMS[$PBS_ARRAY_INDEX]}_isoquant_rules_filtered --json_filter ../my_filter.json --dir ../${PARAMS[$PBS_ARRAY_INDEX]}_isoquant_rules_filtered
+ 
+###########################
+#SQANTI rules filter on FLAIR##
+###########################
+ 
+#!/bin/bash
+#PBS -J 0-2
+ 
+PARAMS=(
+BA9
+BCH
+BP
+)
+ 
+cd /srv/scratch/SQANTI3-5.2.1/
+ 
+source activate SQANTI3.env
+ 
+python sqanti3_filter.py rules ../${PARAMS[$PBS_ARRAY_INDEX]}_flair_SQANTI3_qc/${PARAMS[$PBS_ARRAY_INDEX]}_flair_SQANTI3_qc_classification.txt --gtf ../${PARAMS[$PBS_ARRAY_INDEX]}_flair_SQANTI3_qc/${PARAMS[$PBS_ARRAY_INDEX]}_flair_SQANTI3_qc_corrected.gtf --faa ../${PARAMS[$PBS_ARRAY_INDEX]}_flair_SQANTI3_qc/${PARAMS[$PBS_ARRAY_INDEX]}_flair_SQANTI3_qc_corrected.faa --isoAnnotGFF3 ../${PARAMS[$PBS_ARRAY_INDEX]}_flair_SQANTI3_qc/${PARAMS[$PBS_ARRAY_INDEX]}_flair_SQANTI3_qc.gff3 --output ${PARAMS[$PBS_ARRAY_INDEX]}_flair_rules_filtered --json_filter ../my_filter.json --dir ../${PARAMS[$PBS_ARRAY_INDEX]}_flair_rules_filtered
+ 
+ 
+#my_filer.json:
+ 
+{
+    "full-splice_match": [
+        {
+            "perc_A_downstream_TTS":[0,59]
+        }
+    ],
+    "rest": [
+        {
+            "perc_A_downstream_TTS":[0,59],
+            "all_canonical":"canonical",
+            "exons":2,
+            "RTS_stage":"FALSE"
+        },
+        {   
+            "perc_A_downstream_TTS":[0,59],
+            "RTS_stage":"FALSE",
+            "exons":2,
+            "min_cov":3
+        }
+     ]
+}
+ 
