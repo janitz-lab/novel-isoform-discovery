@@ -1,0 +1,210 @@
+###################
+#File preparations#
+###################
+ 
+##Example on BA9 rep 1 sample is shown
+ 
+#Index all bam files
+ 
+samtools index ./BA9_rep_1.bam
+ 
+#Convert bam files to bed12
+ 
+conda activate flair
+ 
+python /srv/scratch/miniconda3/envs/flair/bin/bam2Bed12 -i ./BA9_rep_1.bam > BA9_rep_1.bed
+ 
+conda deactivate 
+ 
+######################
+#FLAIR correct script#
+######################
+ 
+#!/bin/bash
+#PBS -J 0-18
+ 
+PARAMS=(
+BA9_rep_1
+BA9_rep_2
+BA9_rep_3
+BA9_rep_4
+BA9_rep_5
+BP_rep_1
+BP_rep_2
+BP_rep_3
+BP_rep_4
+BP_rep_5
+BP_rep_6
+BCH_rep_1
+BCH_rep_2
+BCH_rep_3
+BCH_rep_4
+BCH_rep_5
+BCH_rep_6
+BCH_rep_7
+BCH_rep_8
+)
+ 
+cd /srv/scratch/flair_correct_output_BP/
+ 
+mkdir -p ./${PARAMS[$PBS_ARRAY_INDEX]}
+ 
+source activate flair 
+ 
+flair correct --query ../bam_bed12_files/${PARAMS[$PBS_ARRAY_INDEX]}.bed --gtf ../gencode_v45/gencode.v45.annotation.gtf --genome ../gencode_v45/GRCh38.primary_assembly.genome.fa --output ./${PARAMS[$PBS_ARRAY_INDEX]}/ --print_check
+
+###################
+#File preparations#
+###################
+ 
+#To run multiple samples simultaneously and have uniform transcript ID's across individual replicates, concatenate all corrected.bed files into one file.
+ 
+cat BA9_rep_1_all_corrected.bed BA9_rep_2_all_corrected.bed BA9_rep_3_all_corrected.bed BA9_rep_4_all_corrected.bed BA9_rep_5_all_corrected.bed BP_rep_1_all_corrected.bed BP_rep_2_all_corrected.bed BP_rep_3_all_corrected.bed BP_rep_4_all_corrected.bed BP_rep_5_all_corrected.bed BP_rep_6_all_corrected.bed BCH_rep_1_all_corrected.bed BCH_rep_2_all_corrected.bed BCH_rep_3_all_corrected.bed BCH_rep_4_all_corrected.bed BCH_rep_5_all_corrected.bed BCH_rep_6_all_corrected.bed BCH_rep_7_all_corrected.bed BCH_rep_8_all_corrected.bed > BA9_BP_BCH_all_samples_corrected.bed
+ 
+#Developers state that FLAIR collapse is not able to handle  input bed files >1G. To overcome this, they suggest to split the input bed file by chromosome and run these separately.
+ 
+ awk '{print > $1 ".bed"}' BA9_BP_BCH_all_samples_corrected.bed
+ 
+#Output files will be named as chr1.bed chr2.bed etc.
+ 
+#Developers state that if per-chromosome outputs are required (e.g. for large inputs), the reference annotation gtf file should also be split by chromosome.
+ 
+awk '
+BEGIN { header = "" }
+NR==1 { header = $0; next }
+NR==2 { header = header ORS $0; next }
+NR==3 { header = header ORS $0; next }
+NR==4 { header = header ORS $0; next }
+NR==5 { header = header ORS $0; next }
+{
+    file = "gencode.v45.annotation.gtf_" $1 ".gtf"
+    if (files[file]++ == 0) {
+        print header > file
+    }
+    print $0 >> file
+}
+' gencode.v45.annotation.gtf
+ 
+
+#######################
+#FLAIR collapse script#
+#######################
+ 
+#!/bin/bash
+ 
+#PBS -J 0-24
+ 
+PARAMS=(
+        chr1
+        chr2
+        chr3
+        chr4
+        chr5
+        chr6
+        chr7
+        chr8
+        chr9
+        chr10
+        chr11
+        chr12
+        chr13
+        chr14
+        chr15
+        chr16
+        chr17
+        chr18
+        chr19
+        chr20
+        chr21
+        chr22
+        chrM
+        chrX
+        chrY
+)
+ 
+cd /srv/scratch/GTEx_v9/fastq_files/
+source activate flair 
+ 
+flair collapse --query ../../flair_files/${PARAMS[$PBS_ARRAY_INDEX]}.bed --threads 8 --gtf ../../gencode_v45_for_flair/gencode.v45.annotation.gtf_${PARAMS[$PBS_ARRAY_INDEX]}.gtf --genome ../../gencode_v45/GRCh38.primary_assembly.genome.fa --reads ./BA9_rep_1.fastq.gz ./BA9_rep_2.fastq.gz ./BA9_rep_3.fastq.gz ./BA9_rep_4.fastq.gz ./BA9_rep_5.fastq.gz ./BP_rep_1.fastq.gz ./BP_rep_2.fastq.gz ./BP_rep_3.fastq.gz ./BP_rep_4.fastq.gz ./BP_rep_5.fastq.gz ./BP_rep_6.fastq.gz ./BCH_rep_1.fastq.gz ./BCH_rep_2.fastq.gz ./BCH_rep_3.fastq.gz ./BCH_rep_4.fastq.gz ./BCH_rep_5.fastq.gz ./BCH_rep_6.fastq.gz ./BCH_rep_7.fastq.gz ./BCH_rep_8.fastq.gz --stringent --generate_map --annotation_reliant generate --check_splice --output flair_collapse_${PARAMS[$PBS_ARRAY_INDEX]}
+ 
+#######################
+#FLAIR quantify script#
+#######################
+ 
+#!/bin/bash
+ 
+#PBS -J 0-24
+ 
+PARAMS=(
+        chr1
+        chr2
+        chr3
+        chr4
+        chr5
+        chr6
+        chr7
+        chr8
+        chr9
+        chr10
+        chr11
+        chr12
+        chr13
+        chr14
+        chr15
+        chr16
+        chr17
+        chr18
+        chr19
+        chr20
+        chr21
+        chr22
+        chrM
+        chrX
+        chrY
+)
+ 
+cd /srv/scratch/flair_collapse
+source activate flair 
+ 
+flair quantify -r ./flair_quantify_reads_manifest.tsv -i ./flair_collapse_${PARAMS[$PBS_ARRAY_INDEX]}.isoforms.fa --stringent --check_splice --generate_map --threads 4 --isoform_bed ./flair_collapse_${PARAMS[$PBS_ARRAY_INDEX]}.isoforms.bed --output flair_quantify_${PARAMS[$PBS_ARRAY_INDEX]} --temp_dir flair_quantify_${PARAMS[$PBS_ARRAY_INDEX]}.temp
+ 
+#flair_quantify_reads_manifest.tsv:
+ 
+sample1        condition1        batch1        /srv/scratch/GTEx_v9/fastq/BCH_rep_1.fastq.gz
+sample2        condition1        batch1        /srv/scratch/GTEx_v9/fastq/BCH_rep_2.fastq.gz
+sample3        condition1        batch1        /srv/scratch/GTEx_v9/fastq/BCH_rep_3.fastq.gz
+sample4        condition1        batch1        /srv/scratch/GTEx_v9/fastq/BCH_rep_4.fastq.gz
+sample5        condition1        batch1        /srv/scratch/GTEx_v9/fastq/BCH_rep_5.fastq.gz
+sample6        condition1        batch1        /srv/scratch/GTEx_v9/fastq/BCH_rep_6.fastq.gz
+sample7        condition1        batch1        /srv/scratch/GTEx_v9/fastq/BCH_rep_7.fastq.gz
+sample8        condition1        batch1        /srv/scratch/GTEx_v9/fastq/BCH_rep_8.fastq.gz
+sample9        condition2        batch1        /srv/scratch/GTEx_v9/fastq/BA9_rep_1.fastq.gz
+sample10        condition2        batch1        /srv/scratch/GTEx_v9/fastq/BA9_rep_2.fastq.gz
+sample11        condition2        batch1        /srv/scratch/GTEx_v9/fastq/BA9_rep_3.fastq.gz
+sample12        condition2        batch1        /srv/scratch/GTEx_v9/fastq/BA9_rep_4.fastq.gz
+sample13        condition2        batch1        /srv/scratch/GTEx_v9/fastq/BA9_rep_5.fastq.gz
+sample14        condition3        batch1        /srv/scratch/GTEx_v9/fastq/BP_rep_1.fastq.gz
+sample15        condition3        batch1        /srv/scratch/GTEx_v9/fastq/BP_rep_2.fastq.gz
+sample16        condition3        batch1        /srv/scratch/GTEx_v9/fastq/BP_rep_3.fastq.gz
+sample17        condition3        batch1        /srv/scratch/GTEx_v9/fastq/BP_rep_4.fastq.gz
+sample18        condition3        batch1        /srv/scratch/GTEx_v9/fastq/BP_rep_5.fastq.gz
+sample19        condition3        batch1        /srv/scratch/GTEx_v9/fastq/BP_rep_6.fastq.gz
+ 
+
+###############################
+#FLAIR quantify counts to tpm#
+##############################
+ 
+#Getting isoforms lengths from fasta file:
+ 
+cat flair_collapse_chr1.isoforms.fa flair_collapse_chr2.isoforms.fa flair_collapse_chr3.isoforms.fa flair_collapse_chr4.isoforms.fa flair_collapse_chr5.isoforms.fa flair_collapse_chr6.isoforms.fa flair_collapse_chr7.isoforms.fa flair_collapse_chr8.isoforms.fa flair_collapse_chr9.isoforms.fa flair_collapse_chr10.isoforms.fa flair_collapse_chr11.isoforms.fa flair_collapse_chr12.isoforms.fa flair_collapse_chr13.isoforms.fa flair_collapse_chr14.isoforms.fa flair_collapse_chr15.isoforms.fa flair_collapse_chr16.isoforms.fa flair_collapse_chr17.isoforms.fa flair_collapse_chr18.isoforms.fa flair_collapse_chr19.isoforms.fa flair_collapse_chr20.isoforms.fa flair_collapse_chr21.isoforms.fa flair_collapse_chr22.isoforms.fa flair_collapse_chrM.isoforms.fa flair_collapse_chrX.isoforms.fa flair_collapse_chrY.isoforms.fa > flair_collapse.isoforms.fa 
+ 
+../miniconda3/envs/flair/bin/fasta_seq_lengths ./flair_collapse.isoforms.fa flair_seq_lengths flair_seq_lengths_2
+ 
+$Converting raw isoform counts to tpm counts
+ 
+#Remove unnecessary headers and concatenate counts file
+ 
+cat flair_quantify_chr1.counts.tsv <(tail -n +2 flair_quantify_chr2.counts.tsv) <(tail -n +2 flair_quantify_chr3.counts.tsv) <(tail -n +2 flair_quantify_chr4.counts.tsv) <(tail -n +2 flair_quantify_chr5.counts.tsv) <(tail -n +2 flair_quantify_chr6.counts.tsv) <(tail -n +2 flair_quantify_chr7.counts.tsv) <(tail -n +2 flair_quantify_chr8.counts.tsv) <(tail -n +2 flair_quantify_chr9.counts.tsv) <(tail -n +2 flair_quantify_chr10.counts.tsv) <(tail -n +2 flair_quantify_chr11.counts.tsv) <(tail -n +2 flair_quantify_chr12.counts.tsv) <(tail -n +2 flair_quantify_chr13.counts.tsv) <(tail -n +2 flair_quantify_chr14.counts.tsv) <(tail -n +2 flair_quantify_chr15.counts.tsv) <(tail -n +2 flair_quantify_chr16.counts.tsv) <(tail -n +2 flair_quantify_chr17.counts.tsv) <(tail -n +2 flair_quantify_chr18.counts.tsv) <(tail -n +2 flair_quantify_chr19.counts.tsv) <(tail -n +2 flair_quantify_chr20.counts.tsv) <(tail -n +2 flair_quantify_chr21.counts.tsv) <(tail -n +2 flair_quantify_chr22.counts.tsv) <(tail -n +2 flair_quantify_chrM.counts.tsv) <(tail -n +2 flair_quantify_chrX.counts.tsv) <(tail -n +2 flair_quantify_chrY.counts.tsv) > flair_quantify_counts.tsv
+ 
+../miniconda3/envs/flair/lib/python3.10/site-packages/flair/counts_to_tpm.py ./flair_quantify_counts.tsv flair_quantify_tpm.tsv ./flair_collapse.isoforms.fa
