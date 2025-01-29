@@ -1,0 +1,36 @@
+#Required packages
+if (!requireNamespace("BiocManager", quietly = TRUE)) install.packages("BiocManager")
+ 
+BiocManager::install("bambu")
+library(bambu)
+ 
+install.packages("circlize")
+library(circlize)
+ 
+BiocManager::install("ComplexHeatmap", force = TRUE)
+library(ComplexHeatmap)
+ 
+BiocManager::install("ggbio")
+library(ggbio)
+ 
+#preparing files
+setwd("/srv/scratch/gencode_v45/")
+annotations <- prepareAnnotations("gencode.v45.annotation.gtf")
+setwd("/srv/scratch/bambu_bam_files/")
+ 
+#running Bambu 
+se <- bambu(reads = c("BA9_rep_1.bam", "BA9_rep_2.bam", "BA9_rep_3.bam", "BA9_rep_4.bam", "BA9_rep_5.bam", "BCH_rep_1.bam", "BCH_rep_2.bam", "BCH_rep_3.bam", "BCH_rep_4.bam", "BCH_rep_5.bam", "BCH_rep_6.bam", "BCH_rep_7.bam", "BCH_rep_8.bam", "BP_rep_1.bam", "BP_rep_2.bam", "BP_rep_3.bam", "BP_rep_4.bam", "BP_rep_5.bam", "BP_rep_6.bam"), annotations = annotations, genome = "../gencode_v45/GRCh38.p14.genome.fa")
+ 
+#writing output
+writeBambuOutput(se, path = "../bambu_all_BA9_BCH_BP_output")
+ 
+#writing output for novel transcripts only
+se.novel = se[mcols(se)$novelTranscript,]
+writeBambuOutput(se.novel, path = "../bambu_novel_BA9_BCH_BP_output")
+ 
+#plotting transcripts in respect to loci 
+plotBambu(se, type = "annotation", gene_id = "ENSG00000137767.14")
+ 
+#PCA and heatmap figures
+plotBambu(se, type = "heatmap")
+plotBambu(se, type = "pca")
